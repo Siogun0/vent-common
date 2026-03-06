@@ -91,17 +91,20 @@ void go_to_application(void)
 	}
 }
 
-void go_to_bootloader(void)
+uint8_t go_to_bootloader(void)
 {
+	//TODO check availible flash
 	if(flash_bootloader)
 	{
-		return;
+		//Stay in FW
+		return XCP_RESP_POS;
 	}
 	HAL_PWR_EnableBkUpAccess();
 
 	BKP->DR1 = BOOT_MSG_XCP_REQ;
 
 	HAL_NVIC_SystemReset();
+	return XCP_ERR_RESOURCE_TEMPORARY_NOT_ACCESSIBLE;
 }
 
 void reset_device(void)
@@ -115,23 +118,30 @@ uint32_t check_bootloader_request(void)
 	HAL_PWR_EnableBkUpAccess();
 
 	if(BKP->DR1 == BOOT_MSG_XCP_REQ)
-	{
-		req = 1;
+	{		req = 1;
 	}
 	BKP->DR1 = BOOT_MGG_CLEAR;
 	return req;
 }
 
-void *xcp_memcpy(void *dest __attribute__((unused)),
-		const void *src __attribute__((unused)),
-		uint32_t n __attribute__((unused)))
+void *xcp_memcpy(void *dest, const void *src, uint32_t n)
 {
-	memcpy(dest, src, n);
+	return memcpy(dest, src, n);
 }
 
-void do_nothing(void)
+uint8_t do_nothing(void)
 {
+	return XCP_RESP_POS;
+}
+void do_nothing_int32(uint32_t)
+{
+}
 
+t_xcp_download_cb update_values = do_nothing_int32;
+
+void update_values_wrap(uint32_t address)
+{
+	update_values(address);
 }
 
 uint8_t xcp_program_clear(uint32_t mta, uint32_t range)

@@ -201,6 +201,10 @@ void xcp_cmd(const t_xcp_client_config *cfg, uint8_t *buf, uint32_t len)
 		cfg->cto_resp_buf[0] = XCP_RESP_POS;
 		cfg->ctx->mta = xcp_get_dword(&buf[4]);
 		xcp_memcpy((void *)cfg->ctx->mta, &buf[8], buf[1]);
+		if(cfg->download_cb)
+		{
+			cfg->download_cb(cfg->ctx->mta);
+		}
 		cfg->ctx->mta += buf[1];
 		xcp_send(cfg, cfg->cto_resp_buf, buf[1] + 1);
 		break;
@@ -215,6 +219,10 @@ void xcp_cmd(const t_xcp_client_config *cfg, uint8_t *buf, uint32_t len)
 		}
 		cfg->cto_resp_buf[0] = XCP_RESP_POS;
 		xcp_memcpy((void *)cfg->ctx->mta, &buf[2], buf[1]);
+		if(cfg->download_cb)
+		{
+			cfg->download_cb(cfg->ctx->mta);
+		}
 		cfg->ctx->mta += buf[1];
 		xcp_send(cfg, cfg->cto_resp_buf, buf[1] + 1);
 		break;
@@ -489,23 +497,38 @@ void xcp_cmd(const t_xcp_client_config *cfg, uint8_t *buf, uint32_t len)
 	case XCP_PROGRAM_START:
 		if(cfg->program_start_cb)
 		{
-			cfg->program_start_cb();
+			uint8_t result;
+			switch((result = cfg->program_start_cb()))
+			{
+			case XCP_RESP_POS:
+				cfg->cto_resp_buf[0] = XCP_RESP_POS;
+				cfg->cto_resp_buf[1] = 0;
+				cfg->cto_resp_buf[2] = 0;
+				cfg->cto_resp_buf[3] = cfg->max_cto;
+				cfg->cto_resp_buf[4] = 0;
+				cfg->cto_resp_buf[5] = 0;
+				cfg->cto_resp_buf[6] = 0;
+				xcp_send(cfg, cfg->cto_resp_buf, 7);
+				break;
+			default:
+				cfg->cto_resp_buf[0] = XCP_RESP_NEG;
+				cfg->cto_resp_buf[1] = result;
+				xcp_send(cfg, cfg->cto_resp_buf, 2);
+				break;
+			}
 		}
-		cfg->cto_resp_buf[0] = XCP_RESP_POS;
-		cfg->cto_resp_buf[1] = 0;
-		cfg->cto_resp_buf[2] = 0;
-		cfg->cto_resp_buf[3] = cfg->max_cto;
-		cfg->cto_resp_buf[4] = 0;
-		cfg->cto_resp_buf[5] = 0;
-		cfg->cto_resp_buf[6] = 0;
-		xcp_send(cfg, cfg->cto_resp_buf, 7);
+		else
+		{
+			cfg->cto_resp_buf[0] = XCP_RESP_NEG;
+			cfg->cto_resp_buf[1] = XCP_ERR_CMD_UNKNOWN;
+			xcp_send(cfg, cfg->cto_resp_buf, 2);
+		}
 		break;
 
 	case XCP_PROGRAM_CLEAR:
 		if(cfg->program_clear_cb)
 		{
 			uint8_t result;
-
 			switch((result = cfg->program_clear_cb(cfg->ctx->mta, xcp_get_dword(&buf[4]))))
 			{
 			case XCP_RESP_POS:
@@ -545,6 +568,31 @@ void xcp_cmd(const t_xcp_client_config *cfg, uint8_t *buf, uint32_t len)
 				break;
 			}
 			cfg->ctx->mta += buf[1];
+		}
+		else
+		{
+			cfg->cto_resp_buf[0] = XCP_RESP_NEG;
+			cfg->cto_resp_buf[1] = XCP_ERR_CMD_UNKNOWN;
+			xcp_send(cfg, cfg->cto_resp_buf, 2);
+		}
+		break;
+
+	case XCP_PROGRAM_VERIFY:
+		if(cfg->program_verify_cb)
+		{
+			uint8_t result;
+			switch((result = cfg->program_verify_cb()))
+			{
+			case XCP_RESP_POS:
+				cfg->cto_resp_buf[0] = XCP_RESP_POS;
+				xcp_send(cfg, cfg->cto_resp_buf, 1);
+				break;
+			default:
+				cfg->cto_resp_buf[0] = XCP_RESP_NEG;
+				cfg->cto_resp_buf[1] = result;
+				xcp_send(cfg, cfg->cto_resp_buf, 2);
+				break;
+			}
 		}
 		else
 		{

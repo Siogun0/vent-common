@@ -92,10 +92,12 @@ typedef struct
 typedef void (*t_xcp_send_cto_cb)(uint8_t *buf, uint32_t len);
 typedef void (*t_xcp_send_dto_cb)(uint8_t *buf, uint32_t len, uint16_t daq_nr);
 
-typedef void (*t_xcp_program_start_cb)(void);
+typedef uint8_t (*t_xcp_program_start_cb)(void);
 typedef uint8_t (*t_xcp_program_clear_cb)(uint32_t mta, uint32_t range);
 typedef uint8_t (*t_xcp_program_cb)(uint32_t mta, uint8_t *buf, uint8_t len);
 typedef void (*t_xcp_program_reset_cb)(void);
+typedef uint8_t (*t_xcp_program_verify_cb)(void);
+typedef void (*t_xcp_download_cb)(uint32_t mta);
 
 typedef struct
 {
@@ -124,6 +126,8 @@ typedef struct
 	t_xcp_program_clear_cb program_clear_cb;
 	t_xcp_program_cb program_cb;
 	t_xcp_program_reset_cb program_reset_cb;
+	t_xcp_program_verify_cb program_verify_cb;
+	t_xcp_download_cb download_cb;
 } t_xcp_client_config;
 
 

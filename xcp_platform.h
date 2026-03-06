@@ -18,7 +18,6 @@
 #define XCP_BASE_ID	0x7AE
 
 #define SECTOR_SIZE 1024
-//#define SECTOR_0_ADRESS 0x8020000
 
 #define SECTOR_0_BOOT	0x8000000
 #define SECTORS_FOR_BOOT	15
@@ -38,14 +37,19 @@
 #define BOOT_MSG_UDS_REQ	0x10U
 
 void reset_device(void);
-void go_to_bootloader(void);
+uint8_t go_to_bootloader(void);
 void go_to_application(void);
-void do_nothing(void);
+uint8_t do_nothing(void);
+void do_nothing_int32(uint32_t);
+void update_values_wrap(uint32_t);
+
 
 uint8_t xcp_program_clear(uint32_t mta, uint32_t range);
 uint8_t xcp_program(uint32_t mta, uint8_t *buf, uint8_t len);
 
 uint32_t check_bootloader_request(void);
 void set_flash_bootloader(void);
+
+void *xcp_memcpy(void *dest, const void *src, uint32_t n);
 
 #endif /* INC_XCP_PLATFORM_H_ */

@@ -53,11 +53,13 @@ static t_xcp_client_config xcp_cfg_can =
 		.cto_resp_buf = (uint8_t *)&cto_tx_msg,
 		.xcp_send_cto_cb = xcp_send_cto_can,
 		.xcp_send_dto_cb = NULL,//xcp_send_dto_can
+		.download_cb = update_values_wrap,
 
 		.program_start_cb = go_to_bootloader,
 		.program_clear_cb = xcp_program_clear,
 		.program_cb = xcp_program,
 		.program_reset_cb = reset_device,
+		.program_verify_cb = NULL,
 };
 
 void xcp_send_cto_can(uint8_t *buf __attribute__((unused)), uint32_t len)
