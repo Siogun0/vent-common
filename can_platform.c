@@ -8,7 +8,7 @@
 
 extern CAN_HandleTypeDef hcan;
 
-static virtual_mailbox_t virt_mbx[VIRT_MBX_MAX] = {0};
+static virtual_mailbox_t virt_mbx[CAN_BUS_MAX][VIRT_MBX_MAX] = {0};
 
 void platform_can_init()
 {
@@ -27,8 +27,8 @@ void platform_can_init_rx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_
 {
 	uint32_t mask_or_id;
 
-    virt_mbx[mbn].id = id;
-    virt_mbx[mbn].dlc = dlc;
+    virt_mbx[bus_id][mbn].id = id;
+    virt_mbx[bus_id][mbn].dlc = dlc;
 
     CAN_FilterTypeDef CAN_FilterStructure;
     CAN_FilterStructure.FilterBank = mbn;
@@ -50,20 +50,20 @@ void platform_can_init_rx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_
     HAL_CAN_ConfigFilter(&hcan, &CAN_FilterStructure);
 }
 
-void can_init_tx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
+void platform_can_init_tx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
 {
-	virt_mbx[mbn].id = id;
+	virt_mbx[bus_id][mbn].id = id;
 }
 
-void platform_can_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
+void platform_can_msg_recieve(uint32_t bus_id, CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
 {
 	for(int i = 0; i < VIRT_MBX_MAX; i++)
 	{
-		if(rx_header->StdId == virt_mbx[i].id)
+		if(rx_header->StdId == virt_mbx[bus_id][i].id)
 		{
-			virt_mbx[i].arrived = 1;
-			virt_mbx[i].filter_no = rx_header->FilterMatchIndex;
-			virt_mbx[i].data = (uint64_t)data[0] << 0 |
+			virt_mbx[bus_id][i].arrived = 1;
+			virt_mbx[bus_id][i].filter_no = rx_header->FilterMatchIndex;
+			virt_mbx[bus_id][i].data = (uint64_t)data[0] << 0 |
 					(uint64_t)data[1] << 8 |
 					(uint64_t)data[2] << 16 |
 					(uint64_t)data[3] << 24 |
@@ -78,7 +78,7 @@ void platform_can_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
 
 void platform_can_xmit_mb(uint32_t bus_id, uint32_t mbn, uint64_t msg)
 {
-	platform_can_dyn_xmit_mb(bus_id, mbn, virt_mbx[mbn].id, 8, msg);
+	platform_can_dyn_xmit_mb(bus_id, mbn, virt_mbx[bus_id][mbn].id, 8, msg);
 }
 
 void platform_can_dyn_xmit_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc, uint64_t msg)
@@ -102,27 +102,27 @@ void platform_can_dyn_xmit_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32
 	data_byte[6] = (msg >> 48) & 0xFF;
 	data_byte[7] = (msg >> 56) & 0xFF;
 
-	HAL_CAN_AddTxMessage(&hcan, &CAN_TxHeader, data_byte, &(virt_mbx[mbn].mbx_no));
+	HAL_CAN_AddTxMessage(&hcan, &CAN_TxHeader, data_byte, &(virt_mbx[bus_id][mbn].mbx_no));
 }
 
 uint64_t platform_can_get_mb_data(uint32_t bus_id, uint32_t mbn)
 {
-	virt_mbx[mbn].arrived = 0;
-	return virt_mbx[mbn].data;
+	virt_mbx[bus_id][mbn].arrived = 0;
+	return virt_mbx[bus_id][mbn].data;
 }
 
 uint32_t platform_can_get_mb_dlc(uint32_t bus_id, uint32_t mbn)
 {
-	return virt_mbx[mbn].dlc;
+	return virt_mbx[bus_id][mbn].dlc;
 }
 
 uint32_t platform_can_is_message_arrived(uint32_t bus_id, uint32_t mbn)
 {
-	return virt_mbx[mbn].arrived;
+	return virt_mbx[bus_id][mbn].arrived;
 }
 
 uint32_t platform_can_is_message_sent(uint32_t bus_id, uint32_t mbn)
 {
-	return !HAL_CAN_IsTxMessagePending(&hcan, virt_mbx[mbn].mbx_no);
+	return !HAL_CAN_IsTxMessagePending(&hcan, virt_mbx[bus_id][mbn].mbx_no);
 }
 

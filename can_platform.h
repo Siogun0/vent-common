@@ -11,7 +11,8 @@
 #include <stdint.h>
 #include "stm32f1xx_hal.h"
 
-#define VIRT_MBX_MAX	14
+#define CAN_BUS_MAX     1
+#define VIRT_MBX_MAX    14
 
 typedef struct
 {
@@ -23,7 +24,7 @@ typedef struct
 	uint32_t dlc;
 } virtual_mailbox_t;
 
-void platform_can_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[]);
+void platform_can_msg_recieve(uint32_t bus_id, CAN_RxHeaderTypeDef *rx_header, uint8_t data[]);
 
 void platform_can_init(void);
 

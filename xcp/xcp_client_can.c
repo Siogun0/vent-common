@@ -62,6 +62,11 @@ static t_xcp_client_config xcp_cfg_can =
 		.program_verify_cb = NULL,
 };
 
+uint32_t xcp_used_mbxs()
+{
+	return 2 + xcp_cfg_can.daq_lists_max;
+}
+
 void xcp_send_cto_can(uint8_t *buf __attribute__((unused)), uint32_t len)
 {
 	platform_can_dyn_xmit_mb(can_bus, CTO_TX_MBN, CTO_TX_ID, len, cto_tx_msg);
