@@ -10,7 +10,52 @@ extern CAN_HandleTypeDef hcan;
 
 static virtual_mailbox_t virt_mbx[VIRT_MBX_MAX] = {0};
 
-void can_platform_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
+void platform_can_init()
+{
+    if(HAL_CAN_Start(&hcan) != HAL_OK) return;
+    if(HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING |
+			  	  	  	  	  	  	  	  	 CAN_IT_RX_FIFO0_FULL |
+											 //CAN_IT_RX_FIFO1_MSG_PENDING |
+											 //CAN_IT_RX_FIFO1_FULL |
+											 //CAN_IT_TX_MAILBOX_EMPTY |
+											 //CAN_IT_BUSOFF |
+											 CAN_IT_RX_FIFO0_OVERRUN
+											 ) != HAL_OK) return;
+}
+
+void platform_can_init_rx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
+{
+	uint32_t mask_or_id;
+
+    virt_mbx[mbn].id = id;
+    virt_mbx[mbn].dlc = dlc;
+
+    CAN_FilterTypeDef CAN_FilterStructure;
+    CAN_FilterStructure.FilterBank = mbn;
+    CAN_FilterStructure.FilterMode = 0; //TODO dynamic numbering filter by ID
+
+    // for standart ID
+    id = (id & 0b11111111111) << 21;
+    mask_or_id = 0xFFE00000;
+
+    CAN_FilterStructure.FilterMaskIdHigh = mask_or_id >> 16;
+    CAN_FilterStructure.FilterMaskIdLow = mask_or_id & 0xFFFF;
+    CAN_FilterStructure.FilterIdHigh = id >> 16;
+    CAN_FilterStructure.FilterIdLow = id & 0xFFFF;
+
+    CAN_FilterStructure.FilterScale = CAN_FILTERSCALE_32BIT;
+    CAN_FilterStructure.FilterActivation = CAN_FILTER_ENABLE;
+
+    CAN_FilterStructure.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+    HAL_CAN_ConfigFilter(&hcan, &CAN_FilterStructure);
+}
+
+void can_init_tx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
+{
+	virt_mbx[mbn].id = id;
+}
+
+void platform_can_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
 {
 	for(int i = 0; i < VIRT_MBX_MAX; i++)
 	{
@@ -31,58 +76,12 @@ void can_platform_msg_recieve(CAN_RxHeaderTypeDef *rx_header, uint8_t data[])
 	}
 }
 
-void can_platform_init()
+void platform_can_xmit_mb(uint32_t bus_id, uint32_t mbn, uint64_t msg)
 {
-	  if(HAL_CAN_Start(&hcan) != HAL_OK) return;
-	  if(HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING |
-			  	  	  	  	  	  	  	  	 CAN_IT_RX_FIFO0_FULL |
-											 //CAN_IT_RX_FIFO1_MSG_PENDING |
-											 //CAN_IT_RX_FIFO1_FULL |
-											 //CAN_IT_TX_MAILBOX_EMPTY |
-											 //CAN_IT_BUSOFF |
-											 CAN_IT_RX_FIFO0_OVERRUN
-											 ) != HAL_OK) return;
+	platform_can_dyn_xmit_mb(bus_id, mbn, virt_mbx[mbn].id, 8, msg);
 }
 
-void can_init_rx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
-{
-	uint32_t mask_or_id;
-
-	virt_mbx[mbn].id = id;
-
-	  CAN_FilterTypeDef CAN_FilterStructure;
-	  CAN_FilterStructure.FilterBank = mbn;
-	  CAN_FilterStructure.FilterMode = 0; //TODO dynamic numbering filter by ID
-
-	  // for standart ID
-	  id = (id & 0b11111111111) << 21;
-	  mask_or_id = 0xFFE00000;
-
-	  CAN_FilterStructure.FilterMaskIdHigh = mask_or_id >> 16;
-	  CAN_FilterStructure.FilterMaskIdLow = mask_or_id & 0xFFFF;
-	  CAN_FilterStructure.FilterIdHigh = id >> 16;
-	  CAN_FilterStructure.FilterIdLow = id & 0xFFFF;
-
-	  CAN_FilterStructure.FilterScale = CAN_FILTERSCALE_32BIT;
-	  CAN_FilterStructure.FilterActivation = CAN_FILTER_ENABLE;
-
-	  CAN_FilterStructure.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	  HAL_CAN_ConfigFilter(&hcan, &CAN_FilterStructure);
-
-
-}
-
-void can_init_tx_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc)
-{
-	virt_mbx[mbn].id = id;
-}
-
-void can_xmit_mb(uint32_t bus_id, uint32_t mbn, uint64_t msg)
-{
-	can_dyn_xmit_mb(bus_id, mbn, virt_mbx[mbn].id, 8, msg);
-}
-
-void can_dyn_xmit_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc, uint64_t msg)
+void platform_can_dyn_xmit_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc, uint64_t msg)
 {
 	CAN_TxHeaderTypeDef CAN_TxHeader;
 	uint8_t data_byte[8];
@@ -106,23 +105,24 @@ void can_dyn_xmit_mb(uint32_t bus_id, uint32_t mbn, uint32_t id, uint32_t dlc, u
 	HAL_CAN_AddTxMessage(&hcan, &CAN_TxHeader, data_byte, &(virt_mbx[mbn].mbx_no));
 }
 
-uint64_t can_get_mb_data(uint32_t bus_id, uint32_t mbn)
+uint64_t platform_can_get_mb_data(uint32_t bus_id, uint32_t mbn)
 {
 	virt_mbx[mbn].arrived = 0;
 	return virt_mbx[mbn].data;
 }
 
-//uint32_t can_get_mb_dlc(uint32_t bus_id, uint32_t mbn)
-//{
-////	return MODULE_CAN.MO[CAN_NODE_MO(bus_id, mbn)].FCR.B.DLC;
-//}
+uint32_t platform_can_get_mb_dlc(uint32_t bus_id, uint32_t mbn)
+{
+	return virt_mbx[mbn].dlc;
+}
 
-uint32_t can_is_message_arrived(uint32_t bus_id, uint32_t mbn)
+uint32_t platform_can_is_message_arrived(uint32_t bus_id, uint32_t mbn)
 {
 	return virt_mbx[mbn].arrived;
 }
 
-uint32_t can_is_message_sent(uint32_t bus_id, uint32_t mbn)
+uint32_t platform_can_is_message_sent(uint32_t bus_id, uint32_t mbn)
 {
 	return !HAL_CAN_IsTxMessagePending(&hcan, virt_mbx[mbn].mbx_no);
 }
+

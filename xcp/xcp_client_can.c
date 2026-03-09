@@ -64,17 +64,17 @@ static t_xcp_client_config xcp_cfg_can =
 
 void xcp_send_cto_can(uint8_t *buf __attribute__((unused)), uint32_t len)
 {
-	can_dyn_xmit_mb(can_bus, CTO_TX_MBN, CTO_TX_ID, len, cto_tx_msg);
+	platform_can_dyn_xmit_mb(can_bus, CTO_TX_MBN, CTO_TX_ID, len, cto_tx_msg);
 }
 
 void xcp_can_poll()
 {
 	static uint64_t msg;
 
-	if(can_is_message_arrived(can_bus, CTO_RX_MBN))
+	if(platform_can_is_message_arrived(can_bus, CTO_RX_MBN))
 	{
 		xcp_can_is_active = 1;
-		msg = can_get_mb_data(can_bus, CTO_RX_MBN);
+		msg = platform_can_get_mb_data(can_bus, CTO_RX_MBN);
 		xcp_cmd(&xcp_cfg_can, (uint8_t *)&msg, 8);
 	}
 }
@@ -86,8 +86,8 @@ void xcp_can_init(uint32_t bus, uint32_t mbn, uint32_t id)
 	can_bus = bus;
 	first_id = id;
 
-	can_init_rx_mb(can_bus, CTO_RX_MBN, CTO_RX_ID, 8);//CTO receive
-	can_init_tx_mb(can_bus, CTO_TX_MBN, CTO_TX_ID, 8);//CTO transmit
+	platform_can_init_rx_mb(can_bus, CTO_RX_MBN, CTO_RX_ID, 8);//CTO receive
+	platform_can_init_tx_mb(can_bus, CTO_TX_MBN, CTO_TX_ID, 8);//CTO transmit
 }
 
 void xcp_can_bootloader_init(uint32_t bus, uint32_t mbn, uint32_t id)
