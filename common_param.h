@@ -2,12 +2,12 @@
 #define COMMON_PARAM_H
 
 #define COMMON_PARAM_SIZE (64)
-#define COMMON_PARAM_FREE (COMMON_PARAM_SIZE - 32 - 5)
+#define COMMON_PARAM_FREE (COMMON_PARAM_SIZE - 36 - 5)
 
 typedef struct
 {
    uint32_t crc;
-   uint32_t size;    // COMMON_PARAM_SIZE
+   uint32_t size;               // COMMON_PARAM_SIZE
    uint32_t xcp_canid_rx;
    uint32_t xcp_canid_tx;      // Or next and possible DAQ
    uint32_t uds_canid_rx;
@@ -20,5 +20,6 @@ typedef struct
 
    uint8_t reserved[COMMON_PARAM_FREE];
 }common_param_t;
+
 
 #endif /*COMMON_PARAM_H*/
