@@ -1,13 +1,14 @@
 # vent-common
 
-#Общие файлы проектов vent-...
+# Общие файлы проектов vent-...
 
 ## Подключение через символьную ссылку
 Запустить консоль от имени администратора в папке проекта и выполнить  
 `mklink /D "vent-common" "..\vent-common"`  
 
-Добавить в проект пути для всех типов сборок:
-Include
+## Настройка проекта
+Добавить в проект пути для всех типов сборок:  
+Include  
 - /${ProjName}/vent-common
 - /${ProjName}/vent-common/xcp
 - /${ProjName}/vent-common/MetaData
@@ -20,9 +21,10 @@ Source
 #include "can_platform.h"  
 #include "xcp_client_can.h"  
 #include "xcp_platform.h"  
-#include "common_param.h"```
+#include "common_param.h"
+```
 
-Скопировать в папку проекта (папке с хедерами) файлы и переименовать, задать имя проекта
+Скопировать в папку проекта (папку с хедерами) файлы и переименовать, задать имя проекта
 - bn.h.template
 - version.h.template
 
@@ -46,8 +48,16 @@ volatile const __attribute__((section(".calib_flash_sec"))) common_param_t param
 const common_param_t param_def =
 {
     .size = sizeof(common_param_t)
-};```
+};
+```
 
+## Использование общего линкер-скрипта
+Заменить линкер-скрипт в настройках проекта на `${workspace_loc:/${ProjName}/vent-common/linkerScript/STM32F103C8TX_APP.ld}`  
+в файле `Src/system_stm32f1xx.c` 
+- раскоментировать `#define USER_VECT_TAB_ADDRESS`
+- изменить значение #define VECT_TAB_OFFSET         0x00004000U
+
+## Включение XCP протокола
 Добавить код использования XCP:
 ```
 extern uint32_t _start_calib_ram[];
@@ -118,8 +128,3 @@ void load_param(void)
     param.crc = crc;
 }
 ```
-
-Заменить линкер-скрипт в настройках проекта на `${workspace_loc:/${ProjName}/vent-common/linkerScript/STM32F103C8TX_APP.ld}`  
-в файле `Src/system_stm32f1xx.c` 
-- раскоментировать `#define USER_VECT_TAB_ADDRESS`
-- изменить значение #define VECT_TAB_OFFSET         0x00004000U
