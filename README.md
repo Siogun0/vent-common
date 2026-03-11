@@ -55,7 +55,7 @@ const common_param_t param_def =
 Заменить линкер-скрипт в настройках проекта на `${workspace_loc:/${ProjName}/vent-common/linkerScript/STM32F103C8TX_APP.ld}`  
 в файле `Src/system_stm32f1xx.c` 
 - раскоментировать `#define USER_VECT_TAB_ADDRESS`
-- изменить значение #define VECT_TAB_OFFSET         0x00004000U
+- изменить значение `#define VECT_TAB_OFFSET         0x00004000U`
 
 ## Включение XCP протокола
 Добавить код использования XCP:
@@ -66,6 +66,7 @@ var_t __attribute__((section(".var_ram_sec"))) v;
 
 uint16_t config_number = 0;
 uint32_t xcp_base_id = XCP_BASE_ID;
+
 main()
 {
     memset(&v, 0 , sizeof(v));
